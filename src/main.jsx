@@ -528,6 +528,7 @@ function DisplayLab(){
             </div>
           </div>  
           <div className="flex flex-wrap gap-2 items-center">
+            <button type="button" onClick={() => setOpen(true)} className="text-sm px-4 py-2 rounded-md border bg-gray-900 text-white border-gray-900 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Settings</button>
             <button type="button" onClick={undo} disabled={histIndex <= 0} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Undo</button>
             <button type="button" onClick={redo} disabled={histIndex >= history.length - 1} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Redo</button>
           </div>
@@ -573,9 +574,7 @@ function DisplayLab(){
               <a href="https://arkaryan.vercel.app/" target="_blank"> Arkar Yan</a>
           </h3>
 
-          <div className="flex gap-2 justify-center">
-            <button type="button" onClick={() => setOpen(true)} className="text-sm px-4 py-2 rounded-md border bg-gray-900 text-white border-gray-900 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Settings</button>
-          </div>
+        
         </footer>
 
         {/* Settings Modal */}
