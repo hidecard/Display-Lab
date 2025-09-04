@@ -2,6 +2,47 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
+// Add custom CSS for enhanced styling
+const customStyles = `
+  .slider-thumb::-webkit-slider-thumb {
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #4f46e5;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .slider-thumb::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  }
+  .slider-thumb::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #4f46e5;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+  .slider-thumb::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+  }
+`;
+
+// Inject custom styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.textContent = customStyles;
+  document.head.appendChild(styleSheet);
+}
+
 const STORAGE_KEY = 'display-lab-config-v1';
 
 const IconBase = ({ children, className }) => (
@@ -14,37 +55,212 @@ const LayoutIcon = ({ className }) => (<IconBase className={className}><rect x="
 const Grid3X3Icon = ({ className }) => (<IconBase className={className}>{[0,1,2].flatMap(r=>[0,1,2].map(c=>(<rect key={`${r}-${c}`} x={3+c*7} y={3+r*7} width="5" height="5" rx="1" />)))}</IconBase>);
 const Rows3Icon = ({ className }) => (<IconBase className={className}><rect x="3" y="5" width="18" height="4" rx="1" /><rect x="3" y="10" width="18" height="4" rx="1" /><rect x="3" y="15" width="18" height="4" rx="1" /></IconBase>);
 
-const Section = ({ title, children, icon: Icon }) => (
-  <div className="rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
-    <div className="flex items-center gap-2 pb-3 border-b mb-3">{Icon ? <Icon className="w-5 h-5"/>:null}<h2 className="text-lg font-semibold">{title}</h2></div>{children}
+const Section = ({ title, children, icon: Icon, className = "" }) => (
+  <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 p-8 ${className}`}>
+    <div className="flex items-center gap-4 pb-6 border-b border-slate-200 mb-8">
+      {Icon && <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-lg"><Icon className="w-6 h-6 text-white"/></div>}
+      <div>
+        <h2 className="text-2xl font-bold text-slate-900">{title}</h2>
+        <div className="w-12 h-0.5 bg-gradient-to-r from-indigo-500 to-indigo-600 mt-1"></div>
+      </div>
+    </div>
+    {children}
   </div>
 );
 const Toggle = ({ options, value, onChange }) => (
-  <div className="flex flex-wrap gap-2">{options.map((opt)=> (<button key={opt.value} onClick={()=>onChange(opt.value)} className={`px-4 py-2 rounded-full text-sm border transition focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 ${value===opt.value?'bg-gray-900 text-white border-gray-900':'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'}`} title={opt.title||opt.label} type="button">{opt.label}</button>))}</div>
+  <div className="flex flex-wrap gap-3">
+    {options.map((opt) => (
+      <button 
+        key={opt.value} 
+        onClick={() => onChange(opt.value)} 
+        className={`px-6 py-3 rounded-xl text-sm font-semibold border transition-all duration-200 focus:outline-none focus:ring-3 focus:ring-indigo-500 focus:ring-offset-2 ${
+          value === opt.value
+            ? 'bg-gradient-to-r from-indigo-600 to-indigo-700 text-white border-indigo-600 shadow-lg shadow-indigo-200/50'
+            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-800 hover:shadow-sm'
+        }`}
+        aria-pressed={value === opt.value}
+        role="radio"
+        aria-checked={value === opt.value}
+        title={opt.title || opt.label} 
+        type="button"
+      >
+        {opt.label}
+      </button>
+    ))}
+  </div>
 );
 const Slider = ({ label, value, min=1, max=12, step=1, onChange, suffix='', id }) => (
-  <div className="flex items-center gap-4 w-full"><label htmlFor={id} className="w-40 text-sm text-gray-600">{label}</label><input id={id} type="range" min={min} max={max} step={step} value={value} onChange={(e)=>onChange(parseInt(e.target.value))} className="w-full"/><div className="w-16 text-sm tabular-nums text-right">{value}{suffix}</div></div>
+  <div className="space-y-3">
+    <div className="flex items-center justify-between">
+      <label htmlFor={id} className="text-sm font-semibold text-slate-800">{label}</label>
+      <div className="text-sm font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">{value}{suffix}</div>
+    </div>
+    <div className="relative">
+      <input 
+        id={id} 
+        type="range" 
+        min={min} 
+        max={max} 
+        step={step} 
+        value={value} 
+        onChange={(e) => onChange(parseInt(e.target.value))} 
+        className="w-full h-3 bg-slate-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+        style={{
+          background: `linear-gradient(to right, #4f46e5 0%, #4f46e5 ${((value - min) / (max - min)) * 100}%, #e2e8f0 ${((value - min) / (max - min)) * 100}%, #e2e8f0 100%)`
+        }}
+      />
+    </div>
+  </div>
 );
 const NumberField = ({ label, value, onChange, min=0, max=999, step=1, suffix='', id }) => (
-  <label htmlFor={id} className="flex items-center gap-3 text-sm"><span className="w-40 text-gray-600">{label}</span><input id={id} type="number" value={value} min={min} max={max} step={step} onChange={(e)=>onChange(parseInt(e.target.value||0))} className="border rounded-lg px-2 py-1 w-28 focus:border-gray-900 focus:ring-1 focus:ring-gray-900"/><span className="text-gray-500">{suffix}</span></label>
+  <div className="space-y-2">
+    <label htmlFor={id} className="text-sm font-semibold text-slate-800">{label}</label>
+    <div className="flex items-center gap-3">
+      <input 
+        id={id} 
+        type="number" 
+        value={value} 
+        min={min} 
+        max={max} 
+        step={step} 
+        onChange={(e) => onChange(parseInt(e.target.value || 0))} 
+        className="flex-1 border border-slate-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:border-indigo-500 focus:ring-3 focus:ring-indigo-200 transition-all duration-200 font-mono text-slate-800"
+        aria-describedby={suffix ? `${id}-suffix` : undefined}
+      />
+      {suffix && <span className="text-slate-500 font-semibold text-sm">{suffix}</span>}
+    </div>
+  </div>
 );
 const Select = ({ label, value, onChange, options, id }) => (
-  <label htmlFor={id} className="flex items-center gap-3 text-sm"><span className="w-40 text-gray-600">{label}</span><select id={id} value={value} onChange={(e)=>onChange(e.target.value)} className="border rounded-lg px-2 py-1 focus:border-gray-900 focus:ring-1 focus:ring-gray-900">{options.map((o)=>(<option key={o.value} value={o.value}>{o.label}</option>))}</select></label>
+  <div className="space-y-2">
+    <label htmlFor={id} className="text-sm font-semibold text-slate-800">{label}</label>
+    <select 
+      id={id} 
+      value={value} 
+      onChange={(e) => onChange(e.target.value)} 
+      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:border-indigo-500 focus:ring-3 focus:ring-indigo-200 transition-all duration-200 text-slate-800 font-medium"
+      aria-label={label}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>{o.label}</option>
+      ))}
+    </select>
+  </div>
 );
 
 function CodeBlock({ htmlCode, cssCode, tailwindHtml, onExportCodePen, onExportJSFiddle, onDownloadZip }){
-  const [copied,setCopied]=useState('');
-  const copy=async(type)=>{try{const map={html:htmlCode,css:cssCode,tw:tailwindHtml,full:`<!-- HTML -->\n${htmlCode}\n\n/* CSS */\n${cssCode}`};await navigator.clipboard.writeText(map[type]);setCopied(type);setTimeout(()=>setCopied(''),1500);}catch(e){console.error('Copy failed',e);}};
-  return (<div className="grid md:grid-cols-2 gap-4">
-    <div className="rounded-2xl border bg-gray-50 overflow-hidden"><div className="flex items-center justify-between px-3 py-2 border-b bg-white"><div className="flex items-center gap-2 text-sm font-medium"><Code2Icon className="w-4 h-4"/>HTML</div><button onClick={()=>copy('html')} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">{copied==='html'?<CheckIcon className="w-3.5 h-3.5"/>:<CopyIcon className="w-3.5 h-3.5"/>} Copy</button></div><pre className="p-3 text-xs overflow-auto leading-5"><code>{htmlCode}</code></pre></div>
-    <div className="rounded-2xl border bg-gray-50 overflow-hidden"><div className="flex items-center justify-between px-3 py-2 border-b bg-white"><div className="flex items-center gap-2 text-sm font-medium"><Code2Icon className="w-4 h-4"/>CSS</div><button onClick={()=>copy('css')} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">{copied==='css'?<CheckIcon className="w-3.5 h-3.5"/>:<CopyIcon className="w-3.5 h-3.5"/>} Copy</button></div><pre className="p-3 text-xs overflow-auto leading-5"><code>{cssCode}</code></pre></div>
-    <div className="rounded-2xl border bg-gray-50 overflow-hidden md:col-span-2"><div className="flex items-center justify-between px-3 py-2 border-b bg-white"><div className="flex items-center gap-2 text-sm font-medium"><Code2Icon className="w-4 h-4"/>Tailwind (HTML)</div><button onClick={()=>copy('tw')} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">{copied==='tw'?<CheckIcon className="w-3.5 h-3.5"/>:<CopyIcon className="w-3.5 h-3.5"/>} Copy</button></div><pre className="p-3 text-xs overflow-auto leading-5"><code>{tailwindHtml}</code></pre></div>
-    <div className="md:col-span-2 flex flex-wrap gap-2 justify-end">
-      <button onClick={()=>copy('full')} className="text-sm px-3 py-1.5 rounded-md border flex items-center gap-1 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">{copied==='full'?<CheckIcon className="w-3.5 h-3.5"/>:<CopyIcon className="w-3.5 h-3.5"/>} Copy HTML + CSS</button>
-      <button onClick={onExportCodePen} className="text-sm px-3 py-1.5 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">Export to CodePen</button>
-      <button onClick={onExportJSFiddle} className="text-sm px-3 py-1.5 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">Export to JSFiddle</button>
-      <button onClick={onDownloadZip} className="text-sm px-3 py-1.5 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2" type="button">Download ZIP</button>
-    </div></div>);
+  const [copied, setCopied] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  
+  const copy = async (type) => {
+    try {
+      const map = {
+        html: htmlCode,
+        css: cssCode,
+        tw: tailwindHtml,
+        full: `<!-- HTML -->\n${htmlCode}\n\n/* CSS */\n${cssCode}`
+      };
+      await navigator.clipboard.writeText(map[type]);
+      setCopied(type);
+      setTimeout(() => setCopied(''), 2000);
+    } catch (e) {
+      console.error('Copy failed', e);
+    }
+  };
+
+  const handleExport = async (exportFn, type) => {
+    setIsExporting(true);
+    try {
+      await exportFn();
+    } finally {
+      setTimeout(() => setIsExporting(false), 1000);
+    }
+  };
+
+  const CodePanel = ({ title, code, type, icon: Icon = Code2Icon }) => (
+    <div className="rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-white">
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+          <Icon className="w-4 h-4 text-indigo-600" />
+          {title}
+        </div>
+        <button 
+          onClick={() => copy(type)} 
+          className={`text-sm px-3 py-1.5 rounded-lg border flex items-center gap-2 transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            copied === type 
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+          }`} 
+          type="button"
+        >
+          {copied === type ? (
+            <><CheckIcon className="w-3.5 h-3.5" /> Copied!</>
+          ) : (
+            <><CopyIcon className="w-3.5 h-3.5" /> Copy</>
+          )}
+        </button>
+      </div>
+      <pre className="p-4 text-xs overflow-auto leading-6 bg-slate-900 text-slate-100 font-mono">
+        <code>{code}</code>
+      </pre>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        <CodePanel title="HTML" code={htmlCode} type="html" />
+        <CodePanel title="CSS" code={cssCode} type="css" />
+      </div>
+      
+      <CodePanel title="Tailwind HTML" code={tailwindHtml} type="tw" />
+      
+      <div className="flex flex-wrap gap-3 justify-between items-center p-4 bg-slate-50 rounded-2xl border border-slate-200">
+        <button 
+          onClick={() => copy('full')} 
+          className={`text-sm px-4 py-2 rounded-lg border flex items-center gap-2 font-medium transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+            copied === 'full'
+              ? 'bg-green-50 text-green-700 border-green-200'
+              : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+          }`} 
+          type="button"
+        >
+          {copied === 'full' ? (
+            <><CheckIcon className="w-4 h-4" /> Copied Complete Code!</>
+          ) : (
+            <><CopyIcon className="w-4 h-4" /> Copy HTML + CSS</>
+          )}
+        </button>
+        
+        <div className="flex flex-wrap gap-2">
+          <button 
+            onClick={() => handleExport(onExportCodePen, 'codepen')} 
+            disabled={isExporting}
+            className="text-sm px-4 py-2 rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium" 
+            type="button"
+          >
+            {isExporting ? 'Exporting...' : 'Export to CodePen'}
+          </button>
+          <button 
+            onClick={() => handleExport(onExportJSFiddle, 'jsfiddle')} 
+            disabled={isExporting}
+            className="text-sm px-4 py-2 rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium" 
+            type="button"
+          >
+            {isExporting ? 'Exporting...' : 'Export to JSFiddle'}
+          </button>
+          <button 
+            onClick={() => handleExport(onDownloadZip, 'download')} 
+            disabled={isExporting}
+            className="text-sm px-4 py-2 rounded-lg border bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium" 
+            type="button"
+          >
+            {isExporting ? 'Downloading...' : 'Download ZIP'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function DisplayLab(){
@@ -518,32 +734,96 @@ function DisplayLab(){
   const spanRowSet = useMemo(() => new Set(parseIndices(spanRowIndices, setSpanRowError)), [spanRowIndices, items]);
 
   return (
-    <div className="min-h-screen p-4 sm:p-6 md:p-8 lg:p-10">
-      <div className="max-w-1xl mx-2 space-y-6">
-        <header className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-2xl bg-gray-900 text-white"><LayoutIcon className="w-5 h-5"/></div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Css-Labs</h1>
-              <p className="text-xs sm:text-sm text-gray-600">CSS Display and Layout Live Playground</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Skip to main content link for accessibility */}
+      <a 
+        href="#main-content" 
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-indigo-600 text-white px-4 py-2 rounded-lg z-50 focus:outline-none focus:ring-3 focus:ring-indigo-300"
+      >
+        Skip to main content
+      </a>
+      
+      <div className="max-w-1xl mx-2 p-6 lg:p-8 space-y-8" role="main" id="main-content">
+        <header className="bg-white rounded-2xl border border-slate-200 shadow-lg p-8">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-lg">
+                <LayoutIcon className="w-6 h-6"/>
+              </div>
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent leading-tight">Display Lab</h1>
+                <p className="text-base text-slate-600 font-medium mt-1">Interactive CSS Layout Playground</p>
+              </div>
+            </div>  
+            <div className="flex flex-wrap gap-3 items-center">
+              <button 
+                type="button" 
+                onClick={() => setOpen(true)} 
+                className="px-6 py-3 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200/50 hover:from-indigo-700 hover:to-indigo-800 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Settings
+              </button>
+              <button 
+                type="button" 
+                onClick={undo} 
+                disabled={histIndex <= 0} 
+                className="px-4 py-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Undo
+              </button>
+              <button 
+                type="button" 
+                onClick={redo} 
+                disabled={histIndex >= history.length - 1} 
+                className="px-4 py-3 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                Redo
+              </button>
             </div>
-          </div>  
-          <div className="flex flex-wrap gap-2 items-center">
-            <button type="button" onClick={() => setOpen(true)} className="text-sm px-4 py-2 rounded-md border bg-gray-900 text-white border-gray-900 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Settings</button>
-            <button type="button" onClick={undo} disabled={histIndex <= 0} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Undo</button>
-            <button type="button" onClick={redo} disabled={histIndex >= history.length - 1} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Redo</button>
           </div>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
-          <div className="lg:col-span-5 space-y-4">
-            <Section title="Live Preview" icon={LayoutIcon}>
-              <div className="flex justify-center">
-                <div className="border rounded-xl bg-white w-full max-w-full overflow-hidden shadow-md" style={{ width: viewportWidth, maxWidth: '100%' }}>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+          {/* Main Preview Area */}
+          <div className="xl:col-span-8 space-y-8">
+            <Section title="Live Preview" icon={LayoutIcon} className="bg-gradient-to-b from-white to-slate-50">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-4 p-5 bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className="text-sm font-semibold text-slate-800">Preview Viewport</div>
+                  <div className="text-xs text-slate-500 hidden sm:block">Choose screen size simulation</div>
+                </div>
+                <Toggle 
+                  value={viewport} 
+                  onChange={setViewport} 
+                  options={[
+                    { label: 'Auto', value: 'auto' },
+                    { label: 'Mobile', value: 'iphone' },
+                    { label: 'Tablet', value: 'tablet' },
+                    { label: 'Desktop', value: 'desktop' }
+                  ]} 
+                />
+              </div>
+              
+              <div className="p-8 bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl border border-slate-300">
+                <div className="flex justify-center">
+                  <div 
+                    className="border-2 border-slate-400 rounded-xl bg-white shadow-2xl overflow-hidden transition-all duration-300" 
+                    style={{ width: viewportWidth, maxWidth: '100%', minWidth: '320px' }}
+                  >
+                    <div className="bg-slate-300 px-4 py-2 text-xs text-slate-700 font-semibold border-b-2 border-slate-400 flex justify-between items-center">
+                      <span>{viewport === 'auto' ? 'Responsive' : `${viewportWidth}px`}</span>
+                      <span className="text-slate-600">{display.toUpperCase()} Layout</span>
+                    </div>
                   <div style={containerStyle}>
                     {Array.from({ length: items }).map((_, i) => {
                       const idx = i + 1;
-                      const style = { ...boxBaseStyle, background: backgroundForIndex(i) };
+                      const style = { 
+                        ...boxBaseStyle, 
+                        background: backgroundForIndex(i),
+                        transition: 'all 0.3s ease',
+                        cursor: 'default'
+                      };
                       if (display === 'grid') {
                         if (usePerItemSpans) {
                           const sp = itemSpans[i] || { col: 1, row: 1 };
@@ -554,69 +834,287 @@ function DisplayLab(){
                           if (spanRowSet.has(idx)) style.gridRow = `span ${spanRowValue}`;
                         }
                       }
-                      return (<div key={i} style={style}>{showIndex ? `Box ${idx}` : ''}</div>);
+                      return (
+                        <div 
+                          key={i} 
+                          style={style}
+                          className="hover:scale-105 transition-transform duration-200"
+                        >
+                          {showIndex ? (
+                            <div className="text-center">
+                              <div className="font-semibold text-slate-800">Box {idx}</div>
+                              {display === 'grid' && (spanColSet.has(idx) || spanRowSet.has(idx) || (usePerItemSpans && (itemSpans[i]?.col > 1 || itemSpans[i]?.row > 1))) && (
+                                <div className="text-xs text-slate-600 mt-1">
+                                  {usePerItemSpans 
+                                    ? `${itemSpans[i]?.col || 1}×${itemSpans[i]?.row || 1}`
+                                    : `${spanColSet.has(idx) ? spanColValue : 1}×${spanRowSet.has(idx) ? spanRowValue : 1}`
+                                  }
+                                </div>
+                              )}
+                            </div>
+                          ) : ''}
+                        </div>
+                      );
                     })}
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-gray-500 mt-3">Example: If you select display: flex and choose 3 items, 3 boxes will appear in the preview.
-</p>
-            </Section>
-
-            <Section title="Generated Code" icon={Code2Icon}>
-              <CodeBlock htmlCode={htmlCode} cssCode={cssCode} tailwindHtml={tailwindHtml} onExportCodePen={exportToCodePen} onExportJSFiddle={exportToJSFiddle} onDownloadZip={downloadZip} />
-            </Section>
+              
+              {/* <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-1 h-1 rounded-full bg-blue-500 mt-2 flex-shrink-0"></div>
+                  <div className="text-sm text-slate-700">
+                    <span className="font-semibold text-slate-800">Pro Tip:</span> 
+                    <span>Use the settings panel to experiment with different CSS properties. All changes are applied instantly to help you understand layout behavior.</span>
+                  </div>
+                </div>
+              </div> */}
+            </div>
           </div>
+          </Section>
+          
+          <Section title="Generated Code" icon={Code2Icon} className="bg-gradient-to-b from-white to-slate-50">
+            <CodeBlock htmlCode={htmlCode} cssCode={cssCode} tailwindHtml={tailwindHtml} onExportCodePen={exportToCodePen} onExportJSFiddle={exportToJSFiddle} onDownloadZip={downloadZip} />
+          </Section>
         </div>
-
-        <footer className="text-center text-xs text-gray-500 pt-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-         <h3>
-            Made for learning. © 2025
-              <a href="https://arkaryan.vercel.app/" target="_blank"> Arkar Yan</a>
-          </h3>
-
         
+        {/* Quick Controls Sidebar */}
+        <div className="xl:col-span-4 space-y-6">
+          <Section title="Quick Controls" className="bg-gradient-to-b from-white to-slate-50 sticky top-8">
+            <div className="space-y-6">
+              {/* Display Mode */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-800 mb-3">Display Mode</label>
+                <Toggle value={display} onChange={setDisplay} options={[
+                  { label: 'Flex', value: 'flex' },
+                  { label: 'Grid', value: 'grid' },
+                  { label: 'Block', value: 'block' }
+                ]} />
+              </div>
+              
+              {/* Items Count */}
+              <Slider 
+                id="quick-items-slider" 
+                label="Number of Items" 
+                value={items} 
+                min={1} 
+                max={12} 
+                onChange={setItems} 
+              />
+              
+              {/* Gap Control */}
+              {display !== 'grid' ? (
+                <NumberField 
+                  id="quick-gap-input" 
+                  label="Gap" 
+                  value={gap} 
+                  onChange={setGap} 
+                  min={0} 
+                  max={64} 
+                  step={4} 
+                  suffix="px" 
+                />
+              ) : (
+                <>
+                  <NumberField 
+                    id="quick-row-gap-input" 
+                    label="Row Gap" 
+                    value={rowGap} 
+                    onChange={setRowGap} 
+                    min={0} 
+                    max={64} 
+                    step={4} 
+                    suffix="px" 
+                  />
+                  <NumberField 
+                    id="quick-col-gap-input" 
+                    label="Column Gap" 
+                    value={colGap} 
+                    onChange={setColGap} 
+                    min={0} 
+                    max={64} 
+                    step={4} 
+                    suffix="px" 
+                  />
+                </>
+              )}
+              
+              {/* Flex Controls */}
+              {display === 'flex' && (
+                <>
+                  <Select 
+                    id="quick-justify-select" 
+                    label="Justify Content" 
+                    value={justifyContent} 
+                    onChange={setJustifyContent} 
+                    options={[
+                      { label: 'Start', value: 'flex-start' },
+                      { label: 'Center', value: 'center' },
+                      { label: 'End', value: 'flex-end' },
+                      { label: 'Space Between', value: 'space-between' },
+                      { label: 'Space Around', value: 'space-around' },
+                      { label: 'Space Evenly', value: 'space-evenly' }
+                    ]} 
+                  />
+                  <Select 
+                    id="quick-align-select" 
+                    label="Align Items" 
+                    value={alignItems} 
+                    onChange={setAlignItems} 
+                    options={[
+                      { label: 'Stretch', value: 'stretch' },
+                      { label: 'Start', value: 'flex-start' },
+                      { label: 'Center', value: 'center' },
+                      { label: 'End', value: 'flex-end' },
+                      { label: 'Baseline', value: 'baseline' }
+                    ]} 
+                  />
+                </>
+              )}
+              
+              {/* Grid Controls */}
+              {display === 'grid' && (
+                <>
+                  <Slider 
+                    id="quick-grid-cols-slider" 
+                    label="Grid Columns" 
+                    value={gridCols} 
+                    min={1} 
+                    max={6} 
+                    onChange={setGridCols} 
+                  />
+                  <NumberField 
+                    id="quick-row-height-input" 
+                    label="Row Height" 
+                    value={gridAutoRows} 
+                    onChange={setGridAutoRows} 
+                    min={60} 
+                    max={200} 
+                    step={10} 
+                    suffix="px" 
+                  />
+                </>
+              )}
+              
+              {/* Advanced Settings Button */}
+              <div className="pt-4 border-t border-slate-200">
+                <button 
+                  onClick={() => setOpen(true)}
+                  className="w-full px-4 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-lg shadow-lg shadow-slate-200 hover:from-slate-700 hover:to-slate-800 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                >
+                  Advanced Settings
+                </button>
+              </div>
+            </div>
+          </Section>
+        </div>
+      </div>
+
+        <footer className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-12">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-100 to-indigo-200">
+                <LayoutIcon className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-center sm:text-left">
+                <p className="text-sm font-semibold text-slate-800">Css-Labs</p>
+                <p className="text-xs text-slate-600">Made for learning CSS layouts</p>
+              </div>
+            </div>
+            
+            <div className="text-center sm:text-right">
+              <p className="text-xs text-slate-600">
+                © 2025 Created by 
+                <a 
+                  href="https://arkaryan.vercel.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-indigo-600 hover:text-indigo-700 font-semibold ml-1 transition-colors"
+                >
+                  Arkar Yan
+                </a>
+              </p>
+              <p className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                Open Source Educational Tool
+              </p>
+            </div>
+          </div>
         </footer>
 
         {/* Settings Modal */}
         {open && (
-          <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setOpen(false)} aria-hidden="true" />
-            <div className="absolute inset-0 flex items-center justify-center p-4">
-              <div ref={modalRef} tabIndex={-1} className="w-full max-w-5xl rounded-2xl bg-white shadow-2xl border border-gray-200 overflow-hidden focus:outline-none">
-                <div className="flex items-center justify-between px-4 py-3 border-b">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 rounded-xl bg-gray-900 text-white"><LayoutIcon className="w-4 h-4"/></div>
-                    <div id="settings-title" className="font-semibold">Settings</div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} aria-hidden="true" />
+            <div ref={modalRef} tabIndex={-1} className="relative w-full max-w-6xl max-h-[90vh] rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden focus:outline-none transform transition-all duration-300">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-white to-slate-50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-lg">
+                    <LayoutIcon className="w-5 h-5"/>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={undo} disabled={histIndex <= 0} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Undo</button>
-                    <button type="button" onClick={redo} disabled={histIndex >= history.length - 1} className="text-sm px-4 py-2 rounded-md border disabled:opacity-40 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Redo</button>
-                    <button type="button" onClick={() => setOpen(false)} className="text-sm px-4 py-2 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Close</button>
+                  <div>
+                    <div id="settings-title" className="font-bold text-xl text-slate-800">Settings</div>
+                    <div className="text-sm text-slate-600">Configure your layout playground</div>
                   </div>
                 </div>
+                <div className="flex items-center gap-3">
+                  <button 
+                    type="button" 
+                    onClick={undo} 
+                    disabled={histIndex <= 0} 
+                    className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                  >
+                    Undo
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={redo} 
+                    disabled={histIndex >= history.length - 1} 
+                    className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                  >
+                    Redo
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setOpen(false)} 
+                    className="px-4 py-2 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
 
                 {/* Tabs */}
-                <div className="px-4 pt-3">
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50">
                   <div className="flex flex-wrap gap-2">
                     {[
                       ['presets', 'Presets'],
                       ['display', 'Display'],
                       ['common', 'Common'],
-                      ['flex', 'Flex'],
+                      ['flex', 'Flexbox'],
                       ['grid', 'Grid'],
-                      ['spans', 'Spans'],
-                      ['box', 'Box'],
+                      ['spans', 'Grid Spans'],
+                      ['box', 'Styling'],
                       ['responsive', 'Responsive'],
                       ['tips', 'Tips'],
                     ].map(([key, label]) => (
-                      <button key={key} onClick={() => setTab(key)} className={`px-4 py-2 rounded-full text-sm border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2 ${tab === key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-50'}`}>{label}</button>
+                      <button 
+                        key={key} 
+                        onClick={() => setTab(key)} 
+                        className={`px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all duration-200 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                          tab === key 
+                            ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg shadow-indigo-200/50' 
+                            : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-800'
+                        }`}
+                      >
+                        {label}
+                      </button>
                     ))}
                   </div>
                 </div>
 
                 {/* Body */}
-                <div className="p-4 max-h-[70vh] overflow-auto space-y-4">
+                <div className="p-6 max-h-[60vh] overflow-auto space-y-6 bg-gradient-to-b from-white to-slate-50">
                   {tab === 'presets' && (
                     <Section title="Presets" icon={Rows3Icon}>
                       <div className="flex flex-wrap gap-2">
@@ -746,20 +1244,44 @@ function DisplayLab(){
                 </div>
 
                 {/* Footer actions */}
-                <div className="flex items-center justify-between gap-2 px-4 py-3 border-t bg-gray-50">
-                  <div className="flex gap-2">
-                    <button type="button" onClick={exportConfig} className="text-sm px-4 py-2 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Export Config</button>
-                    <button type="button" onClick={importConfig} className="text-sm px-4 py-2 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Import Config</button>
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-6 py-4 border-t border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      type="button" 
+                      onClick={exportConfig} 
+                      className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Export Config
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={importConfig} 
+                      className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Import Config
+                    </button>
                     <input ref={fileInputRef} type="file" accept="application/json" className="hidden" onChange={onImportFile} />
                   </div>
-                  <div className="flex gap-2">
-                    <button type="button" onClick={resetDefaults} className="text-sm px-4 py-2 rounded-md border focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Reset</button>
-                    <button type="button" onClick={() => setOpen(false)} className="text-sm px-4 py-2 rounded-md border bg-gray-900 text-white border-gray-900 focus:ring-2 focus:ring-gray-900 focus:ring-offset-2">Done</button>
+                  <div className="flex flex-wrap gap-3">
+                    <button 
+                      type="button" 
+                      onClick={resetDefaults} 
+                      className="px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 hover:border-slate-400 focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Reset Defaults
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setOpen(false)} 
+                      className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-indigo-700 text-white font-semibold shadow-lg shadow-indigo-200/50 hover:from-indigo-700 hover:to-indigo-800 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
+                    >
+                      Done
+                    </button>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+
         )}
       </div>
     </div>
