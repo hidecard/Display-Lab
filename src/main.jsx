@@ -751,7 +751,7 @@ function DisplayLab(){
                 <LayoutIcon className="w-6 h-6"/>
               </div>
               <div>
-                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent leading-tight">Display Lab</h1>
+                <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent leading-tight">Css-Labs</h1>
                 <p className="text-base text-slate-600 font-medium mt-1">Interactive CSS Layout Playground</p>
               </div>
             </div>  
