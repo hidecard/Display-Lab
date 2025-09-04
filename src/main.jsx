@@ -510,7 +510,7 @@ function DisplayLab(){
   useEffect(() => {
     if (open) {
       modalRef.current?.focus();
-  
+    }
   }, [open]);
 
   const spanColSet = useMemo(() => new Set(parseIndices(spanColIndices, setSpanColError)), [spanColIndices, items]);
