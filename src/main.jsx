@@ -523,7 +523,7 @@ function DisplayLab(){
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-2xl bg-gray-900 text-white"><LayoutIcon className="w-5 h-5"/></div>
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold">Display‑Lab</h1>
+              <h1 className="text-xl sm:text-2xl font-bold">Css-Labs</h1>
               <p className="text-xs sm:text-sm text-gray-600">CSS Display and Layout Live Playground</p>
             </div>
           </div>  
